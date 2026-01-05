@@ -1,228 +1,157 @@
-# rclean
+# rclean 🧹
 
-A cargo subcommand to recursively clean Cargo projects with workspace support.
+> A fast, parallel tool to clean Rust projects and remove unused dependencies
 
-## 🚀 Quick Start
+## Why rclean?
 
-### As a Cargo Plugin (Recommended)
+Rust projects can accumulate gigabytes of build artifacts in `target/` directories. When you have multiple projects or workspaces, manually cleaning them is tedious and time-consuming. Plus, unused dependencies bloat your `Cargo.toml` and slow down builds.
 
-```bash
-# Install from local source
-cargo install --path .
+**rclean solves this by:**
+- 🚀 **Cleaning multiple projects in parallel** - Save time with concurrent cleaning
+- 🎯 **Smart workspace detection** - Automatically finds all Cargo projects
+- 🧹 **Removes unused dependencies** - Keep your `Cargo.toml` clean
+- ⚡ **Fast and efficient** - Built in Rust for maximum performance
 
-# Or install from crates.io (when published)
-# cargo install rclean
+## Quick Start
 
-# Use it as a cargo subcommand
-cargo rclean [options] [directory]
-```
-
-### Standalone Binary
+### Installation
 
 ```bash
-# Build the tool
-cargo build --release
-
-# Use it directly
-./target/release/cargo-rclean [options] [directory]
-```
-
-## 🎯 Usage
-
-### As a Cargo Plugin
-
-```bash
-# Clean all projects in current directory
-cargo rclean
-
-# Clean projects in specific directory
-cargo rclean /path/to/projects
-
-# Dry run (preview what would be cleaned)
-cargo rclean --dry-run
-
-# Exclude certain patterns
-cargo rclean --exclude "**/target" --exclude "**/node_modules"
-
-# Parallel processing with custom job count
-cargo rclean -j 8
-
-# Verbose output
-cargo rclean --verbose
-
-# JSON output for scripting
-cargo rclean --json
-
-# Only clean projects above 100MB
-cargo rclean --min-size 100MB
-
-# Check for unused dependencies (requires cargo-udeps or cargo-machete)
-cargo rclean --clean-deps
-
-# Check and remove unused dependencies (requires cargo-remove)
-cargo rclean --clean-deps --remove-deps
-```
-
-### As a Standalone Binary
-
-```bash
-# Same commands, but use cargo-rclean instead of cargo rclean
-cargo-rclean
-cargo-rclean /path/to/projects
-cargo-rclean --dry-run
-# ... etc
-```
-
-### Advanced Options
-
-```bash
-cargo rclean --help
-```
-
-**Options:**
-- `-j, --jobs <N>`: Number of parallel jobs (default: CPU count)
-- `-e, --exclude <PATTERN>`: Exclude glob patterns (can be specified multiple times)
-- `--dry-run`: Preview mode (doesn't actually clean)
-- `--min-size <SIZE>`: Only clean projects above this size threshold (e.g., "100MB", "1GB")
-- `--clean-deps`: Check for unused dependencies (built-in detection, no external tools needed)
-- `--remove-deps`: Remove unused dependencies (requires `--clean-deps` and `cargo-remove`)
-- `-v, --verbose`: Verbose output
-- `--json`: Output results as JSON
-
-## ✨ Features
-
-- ✅ **Cross-platform**: Works on Windows, macOS, and Linux
-- ✅ **Robust workspace detection**: Uses cargo-metadata API for accurate workspace detection
-- ✅ **Parallel processing**: Clean multiple projects simultaneously (configurable)
-- ✅ **Dry-run mode**: Preview what would be cleaned without making changes
-- ✅ **Exclude patterns**: Skip specific directories using glob patterns
-- ✅ **Progress indication**: Real-time progress bars showing which projects are being cleaned
-- ✅ **JSON output**: Machine-readable output for scripting and automation
-- ✅ **Strong error handling**: Detailed error messages and graceful error recovery
-- ✅ **High performance**: Parallel execution for fast cleaning of large project trees
-- ✅ **Dependency cleaning**: Detect and optionally remove unused dependencies
-
-## 🔧 Requirements
-
-- Rust toolchain (for building)
-- Cargo (Rust package manager)
-
-### Optional Dependencies
-
-For dependency removal (when using `--remove-deps`):
-- **cargo-remove** (from cargo-edit): For removing unused dependencies
-  ```bash
-  cargo install cargo-edit
-  ```
-
-**Note:** Dependency detection is now built-in and doesn't require external tools! The tool parses `Cargo.toml` and searches your source code to find unused dependencies.
-
-## 📦 Installation
-
-### As a Cargo Plugin
-
-```bash
-# Clone or download this repository
+# Clone the repository
 git clone https://github.com/yingkitw/rclean.git
 cd rclean
 
 # Install as a cargo plugin
 cargo install --path .
 
-# Now you can use it as:
+# Now use it!
 cargo rclean
 ```
 
-**Note:** After installation, make sure `~/.cargo/bin` is in your PATH. The `cargo install` command will show you the installation path.
+**Note:** Make sure `~/.cargo/bin` is in your PATH.
 
-### As a Standalone Binary
+### Basic Usage
 
 ```bash
-# Clone or download this repository
-git clone https://github.com/yingkitw/rclean.git
-cd rclean
+# Clean current directory and all subdirectories
+cargo rclean
 
-# Build
-cargo build --release
+# Clean a specific directory
+cargo rclean /path/to/projects
 
-# Use directly
-./target/release/cargo-rclean
+# Preview what would be cleaned (dry run)
+cargo rclean --dry-run
+
+# Only clean projects above 100MB
+cargo rclean --min-size 100MB
+
+# Check for unused dependencies
+cargo rclean --clean-deps
+
+# Remove unused dependencies (automatically checks first)
+cargo rclean --remove-deps
 ```
 
-## 🎨 Example Output
+## Features
 
-### Standard Output
+- ✅ **Parallel processing** - Clean multiple projects simultaneously
+- ✅ **Smart detection** - Uses cargo-metadata for accurate workspace detection
+- ✅ **Dependency cleaning** - Find and remove unused dependencies (built-in detection)
+- ✅ **Size filtering** - Only clean projects above a certain size
+- ✅ **Progress bars** - See what's being cleaned in real-time
+- ✅ **Dry-run mode** - Preview changes before applying them
+- ✅ **Exclude patterns** - Skip specific directories
+- ✅ **JSON output** - Machine-readable output for automation
 
-```
-[INFO] Starting cargo clean from: "/path/to/projects"
-[INFO] Searching for Cargo projects...
-[INFO] Found 5 project(s)
+## Options
 
-⠋ Cleaning: project1
-⠙ Cleaning: project2
-⠹ Cleaning: project3
-[████████████████████░░░░] 3/5 projects completed
+| Option | Description |
+|--------|-------------|
+| `-j, --jobs <N>` | Number of parallel jobs (default: CPU count) |
+| `-e, --exclude <PATTERN>` | Exclude directories matching pattern (can use multiple times) |
+| `--dry-run` | Preview mode (doesn't actually clean) |
+| `--min-size <SIZE>` | Only clean projects above this size (e.g., "100MB", "1GB") |
+| `--clean-deps` | Check for unused dependencies |
+| `--remove-deps` | Remove unused dependencies (requires `cargo-remove`) |
+| `-v, --verbose` | Verbose output |
+| `--json` | Output results as JSON |
 
-✓ project1
-⠋ Cleaning: project4
-⠙ Cleaning: project5
-[████████████████████████] 5/5 projects completed
-All projects completed!
+## Requirements
 
-[INFO] === SUMMARY ===
-[SUCCESS] Successfully cleaned: 5 project(s)
-[SUCCESS] Total storage freed: 1.23 GB
-[SUCCESS] All done!
-```
+- Rust toolchain
+- Cargo
 
-### JSON Output
+### Optional: Dependency Removal
 
-```json
-{
-  "total_projects": 5,
-  "cleaned": 5,
-  "failed": 0,
-  "total_freed_bytes": 1321205760,
-  "results": [
-    {
-      "path": "/path/to/project1",
-      "success": true,
-      "freed_bytes": 524288000,
-      "error": null
-    }
-  ]
-}
+To remove unused dependencies, install `cargo-edit`:
+
+```bash
+cargo install cargo-edit
 ```
 
-## 🏗️ Architecture
+**Note:** Dependency detection is built-in and doesn't require external tools! The tool parses `Cargo.toml` and searches your source code to find unused dependencies.
 
-The implementation uses:
-- **cargo-metadata**: For proper workspace detection using Cargo's own APIs
-- **rayon**: For parallel processing
-- **indicatif**: For progress bars with real-time project status
-- **clap**: For command-line argument parsing
-- **walkdir**: For efficient directory traversal
+## Examples
 
-## 🐛 Error Handling
+### Clean Everything
 
-The tool handles:
-- ✅ Missing workspace dependencies
-- ✅ Malformed Cargo.toml files
-- ✅ Failed cargo clean commands (with fallback to direct target removal)
-- ✅ Permission errors
-- ✅ Missing directories
-- ✅ Network issues (when using cargo metadata)
+```bash
+cargo rclean
+```
 
-Provides detailed error messages and continues processing other projects even if some fail.
+### Clean Only Large Projects
 
-## 📚 See Also
+```bash
+cargo rclean --min-size 500MB
+```
 
-- [IMPROVEMENTS.md](./IMPROVEMENTS.md) - Detailed analysis and improvement recommendations
+### Find Unused Dependencies
 
-## 🤝 Contributing
+```bash
+cargo rclean --clean-deps
+```
 
-Improvements and contributions are welcome! Please feel free to open issues or submit pull requests.
+### Remove Unused Dependencies
 
-## 📄 License
+```bash
+cargo rclean --remove-deps
+```
 
-Licensed under the Apache-2.0 license.
+### Exclude Specific Directories
+
+```bash
+cargo rclean --exclude "**/target/debug" --exclude "**/node_modules"
+```
+
+### Parallel Cleaning with Custom Jobs
+
+```bash
+cargo rclean -j 8
+```
+
+## How It Works
+
+1. **Discovery**: Recursively finds all Cargo projects using `cargo-metadata`
+2. **Filtering**: Optionally filters by size or exclude patterns
+3. **Cleaning**: Removes `target/` directories in parallel
+4. **Dependency Analysis**: Parses `Cargo.toml` and searches source code for unused dependencies
+5. **Removal**: Uses `cargo-remove` to clean up unused dependencies
+
+## Performance
+
+rclean is built in Rust for maximum performance:
+- Parallel execution across all CPU cores
+- Efficient directory traversal
+- Minimal memory footprint
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## License
+
+MIT
+
+## Repository
+
+https://github.com/yingkitw/rclean

@@ -47,12 +47,12 @@ struct Args {
     #[arg(long)]
     min_size: Option<String>,
 
-    /// Clean unused dependencies (requires cargo-udeps or cargo-machete)
+    /// Check for unused dependencies (native detection)
     #[arg(long)]
     clean_deps: bool,
 
-    /// Remove unused dependencies (requires --clean-deps and cargo-remove)
-    #[arg(long, requires = "clean_deps")]
+    /// Remove unused dependencies (automatically enables --clean-deps, requires cargo-remove)
+    #[arg(long)]
     remove_deps: bool,
 }
 
@@ -136,7 +136,9 @@ fn main() -> Result<()> {
         if args.dry_run {
             println!("{} DRY RUN MODE - no changes will be made", "[INFO]".yellow().bold());
         }
-        if args.clean_deps {
+        // If --remove-deps is specified, automatically enable --clean-deps
+        let clean_deps = args.clean_deps || args.remove_deps;
+        if clean_deps {
             println!("{} Dependency cleaning enabled (native detection)", "[INFO]".blue().bold());
             if args.remove_deps {
                 println!("{} Will remove unused dependencies (requires cargo-remove)", "[INFO]".yellow().bold());
@@ -165,8 +167,9 @@ fn main() -> Result<()> {
             // Clean target directory
             let result = clean_project(project, args.dry_run, args.verbose);
 
-            // Clean unused dependencies if requested
-            if args.clean_deps {
+            // Clean unused dependencies if requested (--clean-deps or --remove-deps)
+            // Note: --remove-deps automatically enables dependency checking
+            if args.clean_deps || args.remove_deps {
                 let deps_result = clean_dependencies(project, args.dry_run, args.remove_deps, args.verbose);
                 match deps_result {
                     Ok(deps_clean) => {
