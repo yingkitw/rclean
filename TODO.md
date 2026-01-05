@@ -26,7 +26,11 @@
   - [ ] Default job count
   - [ ] Default output format preferences
 - [ ] Add interactive confirmation mode (`--interactive` flag)
-- [ ] Add `--min-size` flag to only clean projects above threshold
+- [x] Add `--min-size` flag to only clean projects above threshold
+- [ ] Add `--clean-deps` flag to detect and remove unused dependencies
+  - [ ] Detect unused dependencies using cargo-udeps or cargo-machete
+  - [ ] Report unused dependencies
+  - [ ] Optionally remove them (with confirmation)
 - [ ] Improve error messages with context and suggestions
 
 ## Medium Priority

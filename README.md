@@ -55,6 +55,12 @@ cargo rclean --json
 
 # Only clean projects above 100MB
 cargo rclean --min-size 100MB
+
+# Check for unused dependencies (requires cargo-udeps or cargo-machete)
+cargo rclean --clean-deps
+
+# Check and remove unused dependencies (requires cargo-remove)
+cargo rclean --clean-deps --remove-deps
 ```
 
 ### As a Standalone Binary
@@ -78,6 +84,8 @@ cargo rclean --help
 - `-e, --exclude <PATTERN>`: Exclude glob patterns (can be specified multiple times)
 - `--dry-run`: Preview mode (doesn't actually clean)
 - `--min-size <SIZE>`: Only clean projects above this size threshold (e.g., "100MB", "1GB")
+- `--clean-deps`: Check for unused dependencies (requires `cargo-udeps` or `cargo-machete`)
+- `--remove-deps`: Remove unused dependencies (requires `--clean-deps` and `cargo-remove`)
 - `-v, --verbose`: Verbose output
 - `--json`: Output results as JSON
 
@@ -92,11 +100,26 @@ cargo rclean --help
 - ✅ **JSON output**: Machine-readable output for scripting and automation
 - ✅ **Strong error handling**: Detailed error messages and graceful error recovery
 - ✅ **High performance**: Parallel execution for fast cleaning of large project trees
+- ✅ **Dependency cleaning**: Detect and optionally remove unused dependencies
 
 ## 🔧 Requirements
 
 - Rust toolchain (for building)
 - Cargo (Rust package manager)
+
+### Optional Dependencies
+
+For dependency cleaning features:
+- **cargo-udeps** or **cargo-machete**: For detecting unused dependencies
+  ```bash
+  cargo install cargo-udeps  # Recommended (more accurate)
+  # or
+  cargo install cargo-machete
+  ```
+- **cargo-remove** (from cargo-edit): For removing unused dependencies
+  ```bash
+  cargo install cargo-edit
+  ```
 
 ## 📦 Installation
 

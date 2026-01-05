@@ -42,8 +42,15 @@
 - Byte formatting
 - Directory size calculation
 - Path utilities
+- Size string parsing
 
-### 6. Configuration (`src/config.rs`)
+### 6. Dependency Cleaning (`src/deps.rs`)
+- Detects unused dependencies using cargo-udeps or cargo-machete
+- Parses tool output
+- Removes unused dependencies using cargo-remove
+- Reports dependency cleanup results
+
+### 7. Configuration (`src/config.rs`)
 - Loads `.rclean.toml` configuration files
 - Merges CLI args with config
 - Validates configuration
@@ -86,12 +93,19 @@ Output Formatting (human-readable or JSON)
 
 ### Cleaning Process
 
-**Strategy:**
+**Target Directory Cleaning:**
 1. Calculate target directory size before cleaning
 2. Try `cargo clean` command first
 3. If that fails, fall back to direct `rm -rf target`
 4. Calculate actual space freed
 5. Report results
+
+**Dependency Cleaning (optional):**
+1. Check if `cargo-udeps` or `cargo-machete` is available
+2. Run dependency detection tool
+3. Parse output to find unused dependencies
+4. If `--remove-deps` is set, use `cargo-remove` to remove them
+5. Report unused dependencies and removal status
 
 **Parallelization:**
 - Uses `rayon` for parallel execution
@@ -122,6 +136,10 @@ Output Formatting (human-readable or JSON)
 ### Utilities
 - `walkdir`: Directory traversal
 - `glob`: Pattern matching for excludes
+
+### Optional (for dependency cleaning)
+- `cargo-udeps` or `cargo-machete`: External tools for detecting unused dependencies
+- `cargo-remove`: External tool for removing dependencies
 
 ## Configuration
 

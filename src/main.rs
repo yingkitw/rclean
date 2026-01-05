@@ -1,4 +1,5 @@
 mod cleaner;
+mod deps;
 mod output;
 mod project;
 mod utils;
@@ -7,6 +8,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use colored::*;
 use cleaner::{clean_project, CleanResult};
+use deps::clean_dependencies;
 use output::{create_progress_bars, create_project_progress_bar, print_summary, print_verbose_cleaned, print_error, Summary};
 use project::find_cargo_projects;
 use rayon::prelude::*;
@@ -45,6 +47,14 @@ struct Args {
     /// Minimum size threshold (e.g., "100MB", "1GB") - only clean projects above this size
     #[arg(long)]
     min_size: Option<String>,
+
+    /// Clean unused dependencies (requires cargo-udeps or cargo-machete)
+    #[arg(long)]
+    clean_deps: bool,
+
+    /// Remove unused dependencies (requires --clean-deps and cargo-remove)
+    #[arg(long, requires = "clean_deps")]
+    remove_deps: bool,
 }
 
 fn main() -> Result<()> {
@@ -122,6 +132,12 @@ fn main() -> Result<()> {
         if args.dry_run {
             println!("{} DRY RUN MODE - no changes will be made", "[INFO]".yellow().bold());
         }
+        if args.clean_deps {
+            println!("{} Dependency cleaning enabled (requires cargo-udeps or cargo-machete)", "[INFO]".blue().bold());
+            if args.remove_deps {
+                println!("{} Will remove unused dependencies (requires cargo-remove)", "[INFO]".yellow().bold());
+            }
+        }
         println!();
     }
 
@@ -142,7 +158,54 @@ fn main() -> Result<()> {
                 println!("{} Cleaning: {:?}", "[INFO]".blue().bold(), project.path);
             }
 
+            // Clean target directory
             let result = clean_project(project, args.dry_run, args.verbose);
+
+            // Clean unused dependencies if requested
+            if args.clean_deps {
+                let deps_result = clean_dependencies(project, args.dry_run, args.remove_deps);
+                match deps_result {
+                    Ok(deps_clean) => {
+                        if !deps_clean.unused_deps.is_empty() {
+                            if !args.json {
+                                println!(
+                                    "{} Found {} unused dependency(ies) in {:?}",
+                                    "[INFO]".blue().bold(),
+                                    deps_clean.unused_deps.len(),
+                                    project.path
+                                );
+                                if args.verbose {
+                                    for dep in &deps_clean.unused_deps {
+                                        println!("  - {} ({})", dep.name, dep.location);
+                                    }
+                                }
+                                if deps_clean.removed_count > 0 {
+                                    println!(
+                                        "{} Removed {} unused dependency(ies)",
+                                        "[SUCCESS]".green().bold(),
+                                        deps_clean.removed_count
+                                    );
+                                } else if args.remove_deps && !args.dry_run {
+                                    println!(
+                                        "{} Could not remove dependencies (install cargo-remove: cargo install cargo-edit)",
+                                        "[WARNING]".yellow().bold()
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        if !args.json {
+                            println!(
+                                "{} Failed to check dependencies in {:?}: {}",
+                                "[WARNING]".yellow().bold(),
+                                project.path,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
 
             // Finish individual progress bar
             if let Some(ref pb) = project_pb {
