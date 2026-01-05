@@ -2,7 +2,7 @@
 
 ## Overview
 
-`rclean` is a cargo subcommand that recursively finds and cleans Cargo projects. It's designed to be fast, reliable, and user-friendly.
+`deepclean` is a cargo subcommand that recursively finds and cleans Cargo projects. It's designed to be fast, reliable, and user-friendly.
 
 ## Design Principles
 
@@ -51,7 +51,7 @@
 - Reports dependency cleanup results
 
 ### 7. Configuration (`src/config.rs`)
-- Loads `.rclean.toml` configuration files
+- Loads `.deepclean.toml` configuration files
 - Merges CLI args with config
 - Validates configuration
 
@@ -60,7 +60,7 @@
 ```
 User Input (CLI args)
     ↓
-Config Loading (if .rclean.toml exists)
+Config Loading (if .deepclean.toml exists)
     ↓
 Project Discovery (walkdir + cargo-metadata)
     ↓
@@ -144,7 +144,7 @@ Output Formatting (human-readable or JSON)
 
 ## Configuration
 
-### Configuration File (`.rclean.toml`)
+### Configuration File (`.deepclean.toml`)
 
 Located in project root or home directory:
 
@@ -162,8 +162,8 @@ format = "human"  # or "json"
 ### Configuration Priority
 
 1. CLI arguments (highest priority)
-2. `.rclean.toml` in current directory
-3. `~/.rclean.toml` in home directory
+2. `.deepclean.toml` in current directory
+3. `~/.deepclean.toml` in home directory
 4. Built-in defaults (lowest priority)
 
 ## Performance Considerations

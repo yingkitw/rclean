@@ -46,7 +46,7 @@ This project was originally implemented as a bash script, but was rewritten in R
 - ✅ **Better performance**: Parallel execution significantly faster
 - ✅ **Single binary**: No shell dependencies, easy distribution
 - ✅ **Easier to test**: Unit testing is straightforward
-- ✅ **Cargo plugin**: Can be installed and used as `cargo rclean`
+- ✅ **Cargo plugin**: Can be installed and used as `cargo deepclean`
 
 **Implemented Features:**
 - ✅ Parallel cleaning with configurable concurrency

@@ -1,12 +1,12 @@
-# rclean 🧹
+# deepclean 🧹
 
 > A fast, parallel tool to clean Rust projects and remove unused dependencies
 
-## Why rclean?
+## Why deepclean?
 
 Rust projects can accumulate gigabytes of build artifacts in `target/` directories. When you have multiple projects or workspaces, manually cleaning them is tedious and time-consuming. Plus, unused dependencies bloat your `Cargo.toml` and slow down builds.
 
-**rclean solves this by:**
+**deepclean solves this by:**
 - 🚀 **Cleaning multiple projects in parallel** - Save time with concurrent cleaning
 - 🎯 **Smart workspace detection** - Automatically finds all Cargo projects
 - 🧹 **Removes unused dependencies** - Keep your `Cargo.toml` clean
@@ -18,14 +18,14 @@ Rust projects can accumulate gigabytes of build artifacts in `target/` directori
 
 ```bash
 # Clone the repository
-git clone https://github.com/yingkitw/rclean.git
-cd rclean
+git clone https://github.com/yingkitw/deepclean.git
+cd deepclean
 
 # Install as a cargo plugin
 cargo install --path .
 
 # Now use it!
-cargo rclean
+cargo deepclean
 ```
 
 **Note:** Make sure `~/.cargo/bin` is in your PATH.
@@ -34,22 +34,22 @@ cargo rclean
 
 ```bash
 # Clean current directory and all subdirectories
-cargo rclean
+cargo deepclean
 
 # Clean a specific directory
-cargo rclean /path/to/projects
+cargo deepclean /path/to/projects
 
 # Preview what would be cleaned (dry run)
-cargo rclean --dry-run
+cargo deepclean --dry-run
 
 # Only clean projects above 100MB
-cargo rclean --min-size 100MB
+cargo deepclean --min-size 100MB
 
 # Check for unused dependencies
-cargo rclean --clean-deps
+cargo deepclean --clean-deps
 
 # Remove unused dependencies (automatically checks first)
-cargo rclean --remove-deps
+cargo deepclean --remove-deps
 ```
 
 ## Features
@@ -96,37 +96,37 @@ cargo install cargo-edit
 ### Clean Everything
 
 ```bash
-cargo rclean
+cargo deepclean
 ```
 
 ### Clean Only Large Projects
 
 ```bash
-cargo rclean --min-size 500MB
+cargo deepclean --min-size 500MB
 ```
 
 ### Find Unused Dependencies
 
 ```bash
-cargo rclean --clean-deps
+cargo deepclean --clean-deps
 ```
 
 ### Remove Unused Dependencies
 
 ```bash
-cargo rclean --remove-deps
+cargo deepclean --remove-deps
 ```
 
 ### Exclude Specific Directories
 
 ```bash
-cargo rclean --exclude "**/target/debug" --exclude "**/node_modules"
+cargo deepclean --exclude "**/target/debug" --exclude "**/node_modules"
 ```
 
 ### Parallel Cleaning with Custom Jobs
 
 ```bash
-cargo rclean -j 8
+cargo deepclean -j 8
 ```
 
 ## How It Works
@@ -139,7 +139,7 @@ cargo rclean -j 8
 
 ## Performance
 
-rclean is built in Rust for maximum performance:
+deepclean is built in Rust for maximum performance:
 - Parallel execution across all CPU cores
 - Efficient directory traversal
 - Minimal memory footprint
@@ -150,8 +150,8 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Repository
 
-https://github.com/yingkitw/rclean
+https://github.com/yingkitw/deepclean

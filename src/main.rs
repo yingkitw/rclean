@@ -15,9 +15,9 @@ use rayon::prelude::*;
 use utils::{get_directory_size, parse_size};
 
 #[derive(Parser, Debug)]
-#[command(name = "cargo-rclean")]
+#[command(name = "cargo-deepclean")]
 #[command(about = "Recursively clean Cargo projects with workspace support", long_about = None)]
-#[command(bin_name = "cargo rclean")]
+#[command(bin_name = "cargo deepclean")]
 struct Args {
     /// Directory to start cleaning from
     #[arg(default_value = ".")]
@@ -58,19 +58,19 @@ struct Args {
 
 fn main() -> Result<()> {
     // Handle being called as a cargo subcommand
-    // When invoked as `cargo rclean`, cargo passes "rclean" as the first argument
+    // When invoked as `cargo deepclean`, cargo passes "deepclean" as the first argument
     let mut args_iter = std::env::args();
     let program_name = args_iter.next();
     
-    // Check if we're being called as `cargo rclean` (first arg is "rclean")
+    // Check if we're being called as `cargo deepclean` (first arg is "deepclean")
     let first_arg = args_iter.next();
-    let args = if first_arg.as_deref() == Some("rclean") {
-        // Skip "rclean" and parse the rest
+    let args = if first_arg.as_deref() == Some("deepclean") {
+        // Skip "deepclean" and parse the rest
         Args::parse_from(args_iter)
     } else {
-        // Called directly as `cargo-rclean`, reconstruct args
-        let mut all_args = vec![program_name.unwrap_or_else(|| "cargo-rclean".to_string())];
-        // Put back the first arg if it wasn't "rclean"
+        // Called directly as `cargo-deepclean`, reconstruct args
+        let mut all_args = vec![program_name.unwrap_or_else(|| "cargo-deepclean".to_string())];
+        // Put back the first arg if it wasn't "deepclean"
         if let Some(arg) = first_arg {
             all_args.push(arg);
         }

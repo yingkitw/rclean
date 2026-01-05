@@ -1,14 +1,14 @@
 [package]
-name = "rclean"
+name = "deepclean"
 version = "0.1.0"
 edition = "2021"
-description = "A cargo subcommand to recursively clean Cargo projects with workspace support"
+description = "A fast, parallel tool to clean Rust projects and remove unused dependencies"
 license = "Apache-2.0"
 authors = ["Ying Kit WONG"]
-repository = "https://github.com/yingkitw/rclean.git"
+repository = "https://github.com/yingkitw/deepclean.git"
 
 [[bin]]
-name = "cargo-rclean"
+name = "cargo-deepclean"
 path = "src/main.rs"
 
 [dependencies]

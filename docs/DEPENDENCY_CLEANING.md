@@ -2,13 +2,13 @@
 
 ## Overview
 
-The dependency cleaning feature allows `rclean` to detect and optionally remove unused dependencies from your Cargo projects. This helps keep your `Cargo.toml` files clean and reduces build times.
+The dependency cleaning feature allows `deepclean` to detect and optionally remove unused dependencies from your Cargo projects. This helps keep your `Cargo.toml` files clean and reduces build times.
 
 ## How It Works
 
 ### Detection
 
-`rclean` uses external tools to detect unused dependencies:
+`deepclean` uses built-in detection to find unused dependencies:
 
 1. **cargo-udeps** (recommended): More accurate, uses nightly compiler features
    - Detects dependencies that are never imported
@@ -21,7 +21,7 @@ The dependency cleaning feature allows `rclean` to detect and optionally remove 
 
 ### Removal
 
-If `--remove-deps` is specified, `rclean` will attempt to remove unused dependencies using:
+If `--remove-deps` is specified, `deepclean` will attempt to remove unused dependencies using:
 
 - **cargo-remove** (from cargo-edit): Safely removes dependencies from `Cargo.toml`
   - Handles both `[dependencies]` and `[dev-dependencies]`
@@ -33,27 +33,27 @@ If `--remove-deps` is specified, `rclean` will attempt to remove unused dependen
 
 ```bash
 # Check for unused dependencies (dry-run by default)
-cargo rclean --clean-deps
+cargo deepclean --clean-deps
 
 # Check with verbose output
-cargo rclean --clean-deps --verbose
+cargo deepclean --clean-deps --verbose
 ```
 
 ### Detection and Removal
 
 ```bash
 # Check and remove unused dependencies
-cargo rclean --clean-deps --remove-deps
+cargo deepclean --clean-deps --remove-deps
 
 # Preview what would be removed (dry-run)
-cargo rclean --clean-deps --remove-deps --dry-run
+cargo deepclean --clean-deps --remove-deps --dry-run
 ```
 
 ### Combined with Target Cleaning
 
 ```bash
 # Clean both target directories and unused dependencies
-cargo rclean --clean-deps --remove-deps
+cargo deepclean --clean-deps --remove-deps
 ```
 
 ## Installation Requirements

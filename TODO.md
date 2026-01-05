@@ -21,7 +21,7 @@
   - [ ] Test exclude pattern matching
 
 ### Features
-- [ ] Add configuration file support (`.rclean.toml`)
+- [ ] Add configuration file support (`.deepclean.toml`)
   - [ ] Default exclude patterns
   - [ ] Default job count
   - [ ] Default output format preferences
