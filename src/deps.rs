@@ -237,11 +237,23 @@ pub fn remove_unused_dependencies(
     
     for dep in unused_deps {
         if verbose {
-            println!("  {} Attempting to remove dependency: {}", "[DEBUG]".cyan(), dep.name);
+            println!("  {} Attempting to remove dependency: {} ({})", "[DEBUG]".cyan(), dep.name, dep.location);
+        }
+        
+        // Determine which section the dependency is in
+        let is_dev = dep.location.contains("dev-dependencies");
+        let is_build = dep.location.contains("build-dependencies");
+        
+        // Build the cargo remove command with appropriate flags
+        let mut cmd_args = vec!["remove".to_string(), dep.name.clone()];
+        if is_dev {
+            cmd_args.push("--dev".to_string());
+        } else if is_build {
+            cmd_args.push("--build".to_string());
         }
         
         let output = Command::new("cargo")
-            .args(&["remove", &dep.name])
+            .args(&cmd_args)
             .current_dir(&project.path)
             .output()
             .with_context(|| format!("Failed to run `cargo remove {}`", dep.name))?;
@@ -249,14 +261,14 @@ pub fn remove_unused_dependencies(
         if output.status.success() {
             removed += 1;
             if verbose {
-                println!("  {} Successfully removed: {}", "[DEBUG]".green(), dep.name);
+                println!("  {} Successfully removed: {} ({})", "[DEBUG]".green(), dep.name, dep.location);
             }
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            let error_msg = format!("Failed to remove {}: {}", dep.name, stderr);
+            let error_msg = format!("Failed to remove {} ({}): {}", dep.name, dep.location, stderr);
             errors.push(error_msg.clone());
             if verbose {
-                println!("  {} Failed to remove {}: {}", "[DEBUG]".red(), dep.name, stderr);
+                println!("  {} Failed to remove {} ({}): {}", "[DEBUG]".red(), dep.name, dep.location, stderr);
             }
         }
     }
