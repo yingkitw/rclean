@@ -63,12 +63,17 @@ fn main() -> Result<()> {
     let program_name = args_iter.next();
     
     // Check if we're being called as `cargo rclean` (first arg is "rclean")
-    let args = if args_iter.next().as_deref() == Some("rclean") {
+    let first_arg = args_iter.next();
+    let args = if first_arg.as_deref() == Some("rclean") {
         // Skip "rclean" and parse the rest
         Args::parse_from(args_iter)
     } else {
         // Called directly as `cargo-rclean`, reconstruct args
         let mut all_args = vec![program_name.unwrap_or_else(|| "cargo-rclean".to_string())];
+        // Put back the first arg if it wasn't "rclean"
+        if let Some(arg) = first_arg {
+            all_args.push(arg);
+        }
         all_args.extend(args_iter);
         Args::parse_from(all_args)
     };
@@ -136,9 +141,6 @@ fn main() -> Result<()> {
             if args.remove_deps {
                 println!("{} Will remove unused dependencies (requires cargo-remove)", "[INFO]".yellow().bold());
             }
-        } else {
-            // Hint about dependency cleaning feature
-            println!("{} Tip: Use --clean-deps to also check for unused dependencies", "[INFO]".blue().bold());
         }
         println!();
     }
@@ -187,10 +189,19 @@ fn main() -> Result<()> {
                                         deps_clean.removed_count
                                     );
                                 } else if args.remove_deps && !args.dry_run {
-                                    println!(
-                                        "{} Could not remove dependencies (install cargo-remove: cargo install cargo-edit)",
-                                        "[WARNING]".yellow().bold()
-                                    );
+                                    // Check if there was an error
+                                    if let Some(ref error) = deps_clean.error {
+                                        println!(
+                                            "{} Failed to remove dependencies: {}",
+                                            "[ERROR]".red().bold(),
+                                            error
+                                        );
+                                    } else {
+                                        println!(
+                                            "{} Could not remove dependencies (install cargo-remove: cargo install cargo-edit)",
+                                            "[WARNING]".yellow().bold()
+                                        );
+                                    }
                                 } else if args.dry_run {
                                     println!(
                                         "{} Would remove {} dependency(ies) (use --remove-deps to actually remove)",
@@ -199,12 +210,28 @@ fn main() -> Result<()> {
                                     );
                                 }
                             }
-                        } else if args.verbose && !args.json {
-                            println!(
-                                "{} No unused dependencies found in {}",
-                                "[INFO]".blue().bold(),
-                                project.path.display()
-                            );
+                        } else if !args.json {
+                            // Show confirmation that check was performed (only in verbose mode to avoid clutter)
+                            if args.verbose {
+                                println!(
+                                    "{} No unused dependencies found in {}",
+                                    "[INFO]".blue().bold(),
+                                    project.path.display()
+                                );
+                            }
+                        }
+                        
+                        // Check if there was an error even when no unused deps were found
+                        // (e.g., cargo-remove not available when --remove-deps was specified)
+                        if let Some(ref error) = deps_clean.error {
+                            if !args.json {
+                                println!(
+                                    "{} Error during dependency removal in {:?}: {}",
+                                    "[ERROR]".red().bold(),
+                                    project.path,
+                                    error
+                                );
+                            }
                         }
                     }
                     Err(e) => {
@@ -215,10 +242,6 @@ fn main() -> Result<()> {
                                 project.path,
                                 e
                             );
-                            if args.verbose {
-                                println!("  Hint: Install cargo-machete (works on stable): cargo install cargo-machete");
-                                println!("  Or install cargo-udeps (requires nightly): cargo install cargo-udeps");
-                            }
                         }
                     }
                 }

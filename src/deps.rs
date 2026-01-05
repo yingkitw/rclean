@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use crate::project::Project;
+use colored::Colorize;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -208,28 +209,63 @@ pub fn remove_unused_dependencies(
     project: &Project,
     unused_deps: &[UnusedDependency],
     dry_run: bool,
+    verbose: bool,
 ) -> Result<usize> {
     if dry_run || unused_deps.is_empty() {
         return Ok(0);
     }
 
-    // Use cargo-remove if available (from cargo-edit)
+    // Check if cargo-remove is available first
+    let check_output = Command::new("cargo")
+        .args(&["remove", "--help"])
+        .output();
+    
+    match check_output {
+        Ok(output) if output.status.success() => {
+            // cargo-remove is available
+        }
+        _ => {
+            return Err(anyhow::anyhow!(
+                "cargo-remove is not installed. Install it with: cargo install cargo-edit"
+            ));
+        }
+    }
+
+    // Use cargo-remove to remove dependencies
     let mut removed = 0;
+    let mut errors = Vec::new();
+    
     for dep in unused_deps {
+        if verbose {
+            println!("  {} Attempting to remove dependency: {}", "[DEBUG]".cyan(), dep.name);
+        }
+        
         let output = Command::new("cargo")
             .args(&["remove", &dep.name])
             .current_dir(&project.path)
-            .output();
+            .output()
+            .with_context(|| format!("Failed to run `cargo remove {}`", dep.name))?;
 
-        if let Ok(output) = output {
-            if output.status.success() {
-                removed += 1;
+        if output.status.success() {
+            removed += 1;
+            if verbose {
+                println!("  {} Successfully removed: {}", "[DEBUG]".green(), dep.name);
             }
         } else {
-            // Fallback: manually edit Cargo.toml
-            // This is more complex and error-prone, so we skip it for now
-            // TODO: Implement manual Cargo.toml editing
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let error_msg = format!("Failed to remove {}: {}", dep.name, stderr);
+            errors.push(error_msg.clone());
+            if verbose {
+                println!("  {} Failed to remove {}: {}", "[DEBUG]".red(), dep.name, stderr);
+            }
         }
+    }
+
+    if !errors.is_empty() && removed == 0 {
+        return Err(anyhow::anyhow!(
+            "Failed to remove dependencies:\n{}",
+            errors.join("\n")
+        ));
     }
 
     Ok(removed)
@@ -240,14 +276,25 @@ pub fn clean_dependencies(
     project: &Project,
     dry_run: bool,
     remove: bool,
-    _verbose: bool,
+    verbose: bool,
 ) -> Result<DependencyCleanResult> {
     let unused_deps = check_unused_dependencies(project)
         .with_context(|| format!("Failed to check unused dependencies in {:?}", project.path))?;
 
     let removed_count = if remove && !unused_deps.is_empty() {
-        remove_unused_dependencies(project, &unused_deps, dry_run)
-            .unwrap_or(0)
+        match remove_unused_dependencies(project, &unused_deps, dry_run, verbose) {
+            Ok(count) => count,
+            Err(e) => {
+                // Return error in the result instead of failing completely
+                return Ok(DependencyCleanResult {
+                    path: project.path.to_string_lossy().to_string(),
+                    success: false,
+                    unused_deps,
+                    removed_count: 0,
+                    error: Some(e.to_string()),
+                });
+            }
+        }
     } else {
         0
     };
