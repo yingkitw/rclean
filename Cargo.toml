@@ -1,0 +1,26 @@
+[package]
+name = "rclean"
+version = "0.1.0"
+edition = "2021"
+description = "A cargo subcommand to recursively clean Cargo projects with workspace support"
+license = "Apache-2.0"
+authors = ["Ying Kit WONG"]
+repository = "https://github.com/yingkitw/rclean.git"
+
+[[bin]]
+name = "cargo-rclean"
+path = "src/main.rs"
+
+[dependencies]
+cargo_metadata = "0.20"
+rayon = "1.10"
+indicatif = "0.17"
+clap = { version = "4.5", features = ["derive"] }
+colored = "2.1"
+glob = "0.3"
+walkdir = "2.5"
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+num_cpus = "1.16"
+
