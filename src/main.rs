@@ -162,7 +162,7 @@ fn main() -> Result<()> {
 
             // Clean unused dependencies if requested
             if args.clean_deps {
-                let deps_result = clean_dependencies(project, args.dry_run, args.remove_deps);
+                let deps_result = clean_dependencies(project, args.dry_run, args.remove_deps, args.verbose);
                 match deps_result {
                     Ok(deps_clean) => {
                         if !deps_clean.unused_deps.is_empty() {
@@ -213,7 +213,8 @@ fn main() -> Result<()> {
                                 e
                             );
                             if args.verbose {
-                                println!("  Hint: Install cargo-udeps or cargo-machete: cargo install cargo-udeps");
+                                println!("  Hint: Install cargo-machete (works on stable): cargo install cargo-machete");
+                                println!("  Or install cargo-udeps (requires nightly): cargo install cargo-udeps");
                             }
                         }
                     }

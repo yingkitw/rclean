@@ -19,7 +19,37 @@ pub struct DependencyCleanResult {
 
 /// Check for unused dependencies in a project
 pub fn check_unused_dependencies(project: &Project) -> Result<Vec<UnusedDependency>> {
-    // Try cargo-udeps first (more accurate)
+    // Try cargo-machete first (works on stable, simpler)
+    let machete_output = Command::new("cargo")
+        .arg("machete")
+        .current_dir(&project.path)
+        .output();
+
+    match &machete_output {
+        Ok(output) => {
+            // cargo-machete exits with code 1 if unused deps found, 0 if none found
+            // But we should check the output regardless of exit code
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            
+            // Check both stdout and stderr
+            let parsed_stdout = parse_machete_output(&stdout)?;
+            if !parsed_stdout.is_empty() {
+                return Ok(parsed_stdout);
+            }
+            let parsed_stderr = parse_machete_output(&stderr)?;
+            if !parsed_stderr.is_empty() {
+                return Ok(parsed_stderr);
+            }
+            // If we got here, machete ran but found no unused deps (exit code 0)
+            // This is fine, return empty list
+        }
+        Err(_) => {
+            // cargo-machete not available or failed to run, try cargo-udeps
+        }
+    }
+
+    // Try cargo-udeps (more accurate but requires nightly)
     let udeps_output = Command::new("cargo")
         .args(&["udeps", "--output", "json"])
         .current_dir(&project.path)
@@ -42,28 +72,6 @@ pub fn check_unused_dependencies(project: &Project) -> Result<Vec<UnusedDependen
             if !parsed_stderr.is_empty() {
                 return Ok(parsed_stderr);
             }
-        }
-    }
-
-    // Fallback to cargo-machete
-    let machete_output = Command::new("cargo")
-        .arg("machete")
-        .current_dir(&project.path)
-        .output();
-
-    if let Ok(output) = &machete_output {
-        // cargo-machete exits with code 1 if unused deps found, 0 if none found
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        
-        // Check both stdout and stderr
-        let parsed_stdout = parse_machete_output(&stdout)?;
-        if !parsed_stdout.is_empty() {
-            return Ok(parsed_stdout);
-        }
-        let parsed_stderr = parse_machete_output(&stderr)?;
-        if !parsed_stderr.is_empty() {
-            return Ok(parsed_stderr);
         }
     }
 
@@ -102,28 +110,55 @@ fn parse_udeps_output(output: &str) -> Vec<UnusedDependency> {
 fn parse_machete_output(output: &str) -> Result<Vec<UnusedDependency>> {
     let mut unused = Vec::new();
     
+    // cargo-machete outputs unused dependencies in various formats:
+    // - "unused dependency: `dependency_name`"
+    // - Just the dependency name in backticks on its own line
+    // - Sometimes with "Found X unused dependencies:" header
+    
     for line in output.lines() {
-        // cargo-machete output formats:
-        // "unused dependency: `dependency_name`"
-        // or just the dependency name in some cases
         let line = line.trim();
         
+        // Skip empty lines and informational messages
+        if line.is_empty() 
+            || line.contains("Analyzing dependencies")
+            || line.contains("didn't find any unused dependencies")
+            || line.contains("Good job!")
+            || line.contains("Done!")
+            || line.contains("Found") && line.contains("unused dependencies") && !line.contains("`") {
+            continue;
+        }
+        
+        // Pattern 1: "unused dependency: `name`"
         if line.contains("unused dependency:") {
             if let Some(start) = line.find('`') {
                 if let Some(end) = line[start + 1..].find('`') {
                     let dep_name = &line[start + 1..start + 1 + end];
-                    unused.push(UnusedDependency {
-                        name: dep_name.to_string(),
-                        location: "[dependencies]".to_string(), // machete doesn't specify location
-                    });
+                    if !dep_name.is_empty() {
+                        unused.push(UnusedDependency {
+                            name: dep_name.to_string(),
+                            location: "[dependencies]".to_string(),
+                        });
+                    }
                 }
             }
-        } else if line.starts_with("`") && line.ends_with("`") && line.len() > 2 {
-            // Sometimes cargo-machete just outputs the dependency name in backticks
+        } 
+        // Pattern 2: Just a dependency name in backticks on its own line
+        else if line.starts_with('`') && line.ends_with('`') && line.len() > 2 {
             let dep_name = &line[1..line.len() - 1];
-            if !dep_name.is_empty() && !dep_name.contains(' ') {
+            if !dep_name.is_empty() && !dep_name.contains(' ') && !dep_name.contains(':') {
                 unused.push(UnusedDependency {
                     name: dep_name.to_string(),
+                    location: "[dependencies]".to_string(),
+                });
+            }
+        }
+        // Pattern 3: Sometimes it's just the name without backticks (less common)
+        else if !line.contains(" ") && !line.contains(":") && line.len() > 1 && line.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+            // This might be a dependency name, but be conservative
+            // Only add if it looks like a valid crate name
+            if line.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false) {
+                unused.push(UnusedDependency {
+                    name: line.to_string(),
                     location: "[dependencies]".to_string(),
                 });
             }
@@ -175,9 +210,31 @@ pub fn clean_dependencies(
     project: &Project,
     dry_run: bool,
     remove: bool,
+    verbose: bool,
 ) -> Result<DependencyCleanResult> {
     let unused_deps = check_unused_dependencies(project)
         .with_context(|| format!("Failed to check unused dependencies in {:?}", project.path))?;
+
+    // If verbose, provide more information about what tools were tried
+    if verbose && unused_deps.is_empty() {
+        // Check if tools are available
+        let machete_available = Command::new("cargo")
+            .arg("machete")
+            .arg("--version")
+            .output()
+            .is_ok();
+        
+        let udeps_available = Command::new("cargo")
+            .args(&["udeps", "--version"])
+            .output()
+            .is_ok();
+        
+        if !machete_available && !udeps_available {
+            return Err(anyhow::anyhow!(
+                "No dependency checking tools found. Install cargo-machete: cargo install cargo-machete"
+            ));
+        }
+    }
 
     let removed_count = if remove && !unused_deps.is_empty() {
         remove_unused_dependencies(project, &unused_deps, dry_run)
@@ -210,9 +267,27 @@ mod tests {
 
     #[test]
     fn test_parse_machete_output_empty() {
-        let output = "No unused dependencies found.\n";
+        let output = "Analyzing dependencies of crates in this directory...\ncargo-machete didn't find any unused dependencies in this directory. Good job!\nDone!\n";
         let deps = parse_machete_output(output).unwrap();
         assert_eq!(deps.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_machete_output_real_format() {
+        // Real cargo-machete output when it finds unused deps
+        let output = "Analyzing dependencies of crates in this directory...\nunused dependency: `some-crate`\nunused dependency: `another-crate`\nDone!\n";
+        let deps = parse_machete_output(output).unwrap();
+        assert_eq!(deps.len(), 2);
+        assert_eq!(deps[0].name, "some-crate");
+        assert_eq!(deps[1].name, "another-crate");
+    }
+
+    #[test]
+    fn test_parse_machete_output_backticks_only() {
+        // Sometimes cargo-machete outputs just the name in backticks
+        let output = "`unused-crate`\n`another-one`\n";
+        let deps = parse_machete_output(output).unwrap();
+        assert_eq!(deps.len(), 2);
     }
 }
 
