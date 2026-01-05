@@ -136,6 +136,9 @@ fn main() -> Result<()> {
             if args.remove_deps {
                 println!("{} Will remove unused dependencies (requires cargo-remove)", "[INFO]".yellow().bold());
             }
+        } else {
+            // Hint about dependency cleaning feature
+            println!("{} Tip: Use --clean-deps to also check for unused dependencies", "[INFO]".blue().bold());
         }
         println!();
     }

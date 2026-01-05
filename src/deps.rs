@@ -212,28 +212,31 @@ pub fn clean_dependencies(
     remove: bool,
     verbose: bool,
 ) -> Result<DependencyCleanResult> {
+    // Check if tools are available first
+    let machete_available = Command::new("cargo")
+        .arg("machete")
+        .arg("--version")
+        .output()
+        .is_ok();
+    
+    let udeps_available = Command::new("cargo")
+        .args(&["udeps", "--version"])
+        .output()
+        .is_ok();
+    
+    if !machete_available && !udeps_available {
+        return Err(anyhow::anyhow!(
+            "No dependency checking tools found. Install cargo-machete (works on stable): cargo install cargo-machete\nOr install cargo-udeps (requires nightly): cargo install cargo-udeps"
+        ));
+    }
+
     let unused_deps = check_unused_dependencies(project)
         .with_context(|| format!("Failed to check unused dependencies in {:?}", project.path))?;
 
-    // If verbose, provide more information about what tools were tried
+    // If verbose and no unused deps found, show which tool was used
     if verbose && unused_deps.is_empty() {
-        // Check if tools are available
-        let machete_available = Command::new("cargo")
-            .arg("machete")
-            .arg("--version")
-            .output()
-            .is_ok();
-        
-        let udeps_available = Command::new("cargo")
-            .args(&["udeps", "--version"])
-            .output()
-            .is_ok();
-        
-        if !machete_available && !udeps_available {
-            return Err(anyhow::anyhow!(
-                "No dependency checking tools found. Install cargo-machete: cargo install cargo-machete"
-            ));
-        }
+        let tool_used = if machete_available { "cargo-machete" } else { "cargo-udeps" };
+        // This will be shown in the main function
     }
 
     let removed_count = if remove && !unused_deps.is_empty() {
